@@ -115,9 +115,9 @@ def ChangeChar(ch: string): string
   if cha == 'ー'
      cha = '｜'
   elseif cha == '( ' || cha == '（'
-     cha = '⏜ '              # 23dc (in insert mode Ctrl-v u and input this HEX)
+     cha = '⏜'              # 23dc (in insert mode Ctrl-v u and input this HEX)
   elseif cha == ') ' || cha == '）'
-     cha = '⏝ '              # 23dd
+     cha = '⏝'              # 23dd
   elseif cha == '= '
      cha = '꯫'              # 2225 or a831, abeb, 2016 (using abeb) 
   elseif cha == '。'
