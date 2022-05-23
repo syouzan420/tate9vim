@@ -347,6 +347,10 @@ def UpdateText()
       endif
       tl = bls[y - 1]
       heads = slice(tl, 0, x - 1)
+      var lnl = strchars(tl)
+      if lnl < x
+        str = repeat(' ', x - lnl - 1) .. str
+      endif
       tail = slice(tl, x - 1) 
       tnl = heads .. str .. tail      # new vertical line 
       if y == 1
