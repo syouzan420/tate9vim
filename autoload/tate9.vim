@@ -262,8 +262,8 @@ enddef
 
 # CREATE FIELD ------------------------------------------------------------------
 def CreateField()
-  set hidden
-  enew
+#  set hidden
+  enew!
   set nonumber
   const ls = repeat([' '], h - 1)
   append(1, ls)
@@ -287,14 +287,15 @@ def ConvPos()
 enddef
 # --------------------------------------------------------------------------------
 
-def UpdateText()
+def UpdateText(bli: bool)                     # bli : leave insert mode or not
   var icr = px != (line('.') - 1)             # whether <CR> is entered or not
   var tl: string
   var tnl: string
   var heads: string
   var tail: string
   ConvPos()
-  if icr
+  if icr 
+    bcr = true
     setline(len(fls) + 2, " ")
     tl = bls[y - 1]
     heads = slice(tl, 0, x - 1)
@@ -307,59 +308,62 @@ def UpdateText()
     x = 1
     y = y + 1
   else
-    var ol = fls[px - 1]
-    var nl = getline('.')
-    var df = strchars(nl) - strchars(ol)  # character length of the input
-    var ibs = df < 0                    # whether <BS> is entered or not 
-    if ibs
-      tl = bls[y - 1]
-      if x == 1
-        if y == 1
-          bls = [" "]
-        else
-          bls = bls[0 : y - 2] + bls[y :]
-          x = strchars(bls[y - 2]) + 1 
-          y = y - 1
+    if !bli
+      var ol = fls[px - 1]
+      var nl = getline('.')
+      var df = strchars(nl) - strchars(ol)  # character length of the input
+      var ibs = df < 0                    # whether <BS> is entered or not 
+      if ibs && !bcr
+        tl = bls[y - 1]
+        if x == 1
+          if y == 1
+            bls = [" "]
+          else
+            bls = bls[0 : y - 2] + bls[y :]
+            x = strchars(bls[y - 2]) + 1 
+            y = y - 1
+          endif
+       else
+          heads = slice(tl, 0, x - 2)
+          tail = slice(tl, x - 1) 
+          tnl = heads .. tail
+          if y == 1
+            if x == 2
+              bls = [" "] + bls[y :]
+            else
+              bls = [tnl] + bls[y :]
+            endif
+          else
+            bls = bls[0 : y - 2] + [tnl] + bls[y :]
+          endif
+          x = x - 1 
         endif
       else
-        heads = slice(tl, 0, x - 2)
+        var str = ""
+        var i = 0
+        if ol != nl
+          while slice(ol, i, i + 1) == slice(nl, i, i + 1)
+            i += 1  
+          endwhile
+          str = slice(nl, i, i + df)      # input string 
+        endif
+        tl = bls[y - 1]
+        heads = slice(tl, 0, x - 1)
+        var lnl = strchars(tl)
+        if lnl < x
+          str = repeat(' ', x - lnl - 1) .. str
+        endif
         tail = slice(tl, x - 1) 
-        tnl = heads .. tail
+        tnl = heads .. str .. tail      # new vertical line 
         if y == 1
-          if x == 2
-            bls = [" "] + bls[y :]
-          else
-            bls = [tnl] + bls[y :]
-          endif
+          bls = [tnl] + bls[y :]
         else
           bls = bls[0 : y - 2] + [tnl] + bls[y :]
         endif
-        x = x - 1 
+        x = x + df
       endif
-    else
-      var str = ""
-      var i = 0
-      if ol != nl
-        while slice(ol, i, i + 1) == slice(nl, i, i + 1)
-          i += 1  
-        endwhile
-        str = slice(nl, i, i + df)      # input string 
-      endif
-      tl = bls[y - 1]
-      heads = slice(tl, 0, x - 1)
-      var lnl = strchars(tl)
-      if lnl < x
-        str = repeat(' ', x - lnl - 1) .. str
-      endif
-      tail = slice(tl, x - 1) 
-      tnl = heads .. str .. tail      # new vertical line 
-      if y == 1
-        bls = [tnl] + bls[y :]
-      else
-        bls = bls[0 : y - 2] + [tnl] + bls[y :]
-      endif
-      x = x + df
     endif
+    bcr = false
   endif
   ChangeToTate()
   var status = "pl=" .. pl .. " px=" .. px .. " cy=" .. cy .. " cx=" .. cx .. " s=" .. scrl .. " m=" .. msc
@@ -421,8 +425,8 @@ def tate9#TateStart()
   ChangeToTate()
   augroup Tate 
     autocmd!
-    autocmd InsertLeave * call feedkeys("\<right>", 'n')
-    autocmd TextChangedI * UpdateText()
+    autocmd InsertLeave * UpdateText(true)
+    autocmd TextChangedI * UpdateText(false)
     autocmd CursorMoved * MoveCursor()
   augroup END
 enddef
@@ -438,6 +442,7 @@ def TateChange()
   append(0, bls)     # append new data
   delcommand Tateq
   delcommand Tatec
+  mapclear
 enddef
 
 def TateEnd()
@@ -465,3 +470,4 @@ var px: number
 var scrl = 0
 var msc: number
 var oln: list<number>
+var bcr = false     # whether Enter Key is pushed
