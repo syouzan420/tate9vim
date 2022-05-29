@@ -52,9 +52,13 @@ def ConvertList()
   var mxl = len(nls)     # length of the list (max line numbers) 
   var fl = mxl - pl      # number of lines from left to the cursor position
   var lim = w / 2 - 4      # the display character length
+  var ex = pl
+  if ex > 5
+    ex = 4
+  endif
   if scrl == 0
     if fl > lim
-      scrl = fl - lim   
+      scrl = fl - lim + ex 
     else
       scrl = 0
     endif
@@ -262,9 +266,10 @@ enddef
 
 # CREATE FIELD ------------------------------------------------------------------
 def CreateField()
-#  set hidden
   enew!
   set nonumber
+  set nofoldenable
+  set scrolloff=0
   const ls = repeat([' '], h - 1)
   append(1, ls)
   bp!
@@ -396,12 +401,16 @@ def MoveCursor()
     else
       CursorSet()
     endif
-  elseif cx < ncx               # cursor move right
+  elseif cx < ncx             # cursor move right
     pl = pl - 1
     if msc > scrl && ncx > (col('$') - 10)
       scrl = scrl + 1
       ShowTate()
     else
+      if pl == 0
+        pl = pl + 1
+        cx = cx + 1
+      endif
       CursorSet()
     endif
   endif
@@ -435,11 +444,13 @@ def TateChange()
   augroup Tate 
     autocmd!
   augroup END
+  ConvPos()
   bd!                     # return the original buffer
   # clear the buffer
   normal 1G
   normal dG 
   append(0, bls)     # append new data
+  cursor(y, x)
   delcommand Tateq
   delcommand Tatec
   mapclear
