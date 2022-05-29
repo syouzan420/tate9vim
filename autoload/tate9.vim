@@ -75,7 +75,7 @@ enddef
 def AddSpacesToList()
   var lst = copy(nls)
   var nlst = mapnew(lst, (_, v) => strchars(v))
-  var mxl = max(nlst)
+  var mxl = h - 2
   map(nls, (_, v) => AddSpaces(v, mxl))
 enddef
 # --------------------------------------------------------------------------------
@@ -399,6 +399,9 @@ def MoveCursor()
       scrl = scrl - 1
       ShowTate()
     else
+      if pl > len(nls)
+        pl = pl - 1
+      endif
       CursorSet()
     endif
   elseif cx < ncx             # cursor move right
